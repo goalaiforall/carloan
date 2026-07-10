@@ -64,12 +64,17 @@ export function compareDealerOffer(offer: DealerOfferInputs, calculatedAmountFin
 }
 
 export function calculateLoan(inputs: CalculatorInputs): LoanResults {
-  const taxAmount = clampMoney(inputs.vehiclePrice) * Math.max(0, inputs.taxRate) / 100;
-  const equity = clampMoney(inputs.tradeInValue) - clampMoney(inputs.currentLoanBalance);
+  const vehiclePrice = clampMoney(inputs.vehiclePrice);
+  const tradeInValue = clampMoney(inputs.tradeInValue);
+  const equity = tradeInValue - clampMoney(inputs.currentLoanBalance);
   const negativeEquity = equity < 0 ? Math.abs(equity) : 0;
   const positiveEquity = equity > 0 ? equity : 0;
   const dealerAddedCharges = clampMoney(inputs.fees) + clampMoney(inputs.extras);
-  const amountBeforeTradeAndDownPayment = clampMoney(inputs.vehiclePrice) + taxAmount + dealerAddedCharges;
+  const preTaxVehicleCost = vehiclePrice + dealerAddedCharges;
+  const tradeInTaxCredit = Math.min(tradeInValue, preTaxVehicleCost);
+  const taxableAmount = Math.max(0, preTaxVehicleCost - tradeInTaxCredit);
+  const taxAmount = taxableAmount * Math.max(0, inputs.taxRate) / 100;
+  const amountBeforeTradeAndDownPayment = preTaxVehicleCost + taxAmount;
   const baseCost = amountBeforeTradeAndDownPayment - clampMoney(inputs.downPayment);
   const amountFinanced = Math.max(0, baseCost + negativeEquity - positiveEquity);
   const amountAboveVehiclePriceBeforeInterest = Math.max(0, amountFinanced - clampMoney(inputs.vehiclePrice));
@@ -77,6 +82,8 @@ export function calculateLoan(inputs: CalculatorInputs): LoanResults {
 
   return {
     taxAmount,
+    taxableAmount,
+    tradeInTaxCredit,
     baseCost,
     dealerAddedCharges,
     amountBeforeTradeAndDownPayment,
@@ -85,7 +92,7 @@ export function calculateLoan(inputs: CalculatorInputs): LoanResults {
     negativeEquity,
     positiveEquity,
     amountFinanced,
-    realCostVsAdvertised: Math.max(0, paymentDetails.totalPaid - clampMoney(inputs.vehiclePrice)),
+    realCostVsAdvertised: Math.max(0, paymentDetails.totalPaid - vehiclePrice),
     ...paymentDetails,
   };
 }
