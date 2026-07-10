@@ -37,13 +37,19 @@ export function calculateLoan(inputs: CalculatorInputs): LoanResults {
   const equity = clampMoney(inputs.tradeInValue) - clampMoney(inputs.currentLoanBalance);
   const negativeEquity = equity < 0 ? Math.abs(equity) : 0;
   const positiveEquity = equity > 0 ? equity : 0;
-  const baseCost = clampMoney(inputs.vehiclePrice) + taxAmount + clampMoney(inputs.fees) + clampMoney(inputs.extras) - clampMoney(inputs.downPayment);
+  const dealerAddedCharges = clampMoney(inputs.fees) + clampMoney(inputs.extras);
+  const amountBeforeTradeAndDownPayment = clampMoney(inputs.vehiclePrice) + taxAmount + dealerAddedCharges;
+  const baseCost = amountBeforeTradeAndDownPayment - clampMoney(inputs.downPayment);
   const amountFinanced = Math.max(0, baseCost + negativeEquity - positiveEquity);
+  const amountAboveVehiclePriceBeforeInterest = Math.max(0, amountFinanced - clampMoney(inputs.vehiclePrice));
   const paymentDetails = calculatePayment(amountFinanced, inputs.annualRate, inputs.termMonths, inputs.frequency);
 
   return {
     taxAmount,
     baseCost,
+    dealerAddedCharges,
+    amountBeforeTradeAndDownPayment,
+    amountAboveVehiclePriceBeforeInterest,
     equity,
     negativeEquity,
     positiveEquity,

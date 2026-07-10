@@ -20,6 +20,9 @@ export interface CalculatorInputs {
 export interface LoanResults {
   taxAmount: number;
   baseCost: number;
+  dealerAddedCharges: number;
+  amountBeforeTradeAndDownPayment: number;
+  amountAboveVehiclePriceBeforeInterest: number;
   equity: number;
   negativeEquity: number;
   positiveEquity: number;
