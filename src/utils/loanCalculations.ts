@@ -1,4 +1,4 @@
-import type { CalculatorInputs, LoanResults, PaymentFrequency, ScenarioInput, ScenarioResult } from '../types';
+import type { CalculatorInputs, DealerOfferInputs, DealerOfferMatch, LoanResults, PaymentFrequency, ScenarioInput, ScenarioResult } from '../types';
 
 const paymentsPerYear: Record<PaymentFrequency, number> = {
   weekly: 52,
@@ -29,6 +29,37 @@ export function calculatePayment(principal: number, annualRatePercent: number, t
     numberOfPayments,
     totalPaid,
     totalInterest: Math.max(0, totalPaid - safePrincipal),
+  };
+}
+
+
+export function calculatePrincipalFromPayment(payment: number, annualRatePercent: number, termMonths: number, frequency: PaymentFrequency) {
+  const safePayment = clampMoney(payment);
+  const safeTerm = Math.max(1, Number.isFinite(termMonths) ? termMonths : 1);
+  const periodsPerYear = paymentsPerYear[frequency];
+  const numberOfPayments = Math.ceil((safeTerm / 12) * periodsPerYear);
+  const annualRate = Math.max(0, annualRatePercent) / 100;
+  const ratePerPeriod = annualRate / periodsPerYear;
+
+  if (ratePerPeriod === 0) {
+    return safePayment * numberOfPayments;
+  }
+
+  return safePayment * (1 - Math.pow(1 + ratePerPeriod, -numberOfPayments)) / ratePerPeriod;
+}
+
+export function compareDealerOffer(offer: DealerOfferInputs, calculatedAmountFinanced: number): DealerOfferMatch {
+  const impliedAmountFinanced = calculatePrincipalFromPayment(offer.offeredPayment, offer.annualRate, offer.termMonths, offer.frequency);
+  const differenceFromCalculated = impliedAmountFinanced - clampMoney(calculatedAmountFinanced);
+  const absoluteDifference = Math.abs(differenceFromCalculated);
+  const percentageDifference = calculatedAmountFinanced > 0 ? absoluteDifference / calculatedAmountFinanced * 100 : 0;
+
+  return {
+    impliedAmountFinanced,
+    differenceFromCalculated,
+    absoluteDifference,
+    percentageDifference,
+    matches: absoluteDifference <= Math.max(250, calculatedAmountFinanced * 0.005),
   };
 }
 

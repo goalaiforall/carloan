@@ -34,6 +34,21 @@ export interface LoanResults {
   realCostVsAdvertised: number;
 }
 
+export interface DealerOfferInputs {
+  offeredPayment: number;
+  annualRate: number;
+  termMonths: number;
+  frequency: PaymentFrequency;
+}
+
+export interface DealerOfferMatch {
+  impliedAmountFinanced: number;
+  differenceFromCalculated: number;
+  absoluteDifference: number;
+  percentageDifference: number;
+  matches: boolean;
+}
+
 export interface ScenarioInput {
   id: string;
   name: string;
